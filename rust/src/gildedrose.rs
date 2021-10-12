@@ -32,56 +32,49 @@ impl GildedRose {
 
     pub fn update_quality(&mut self) {
         for item in &mut self.items {
-            if item.name != "Aged Brie" && item.name != "Backstage passes to a TAFKAL80ETC concert"
-            {
-                if item.quality > 0 {
-                    if item.name != "Sulfuras, Hand of Ragnaros" {
-                        item.quality = item.quality - 1;
-                    }
-                }
-            } else {
-                if item.quality < 50 {
-                    item.quality = item.quality + 1;
-
-                    if item.name == "Backstage passes to a TAFKAL80ETC concert" {
-                        if item.sell_in < 11 {
-                            if item.quality < 50 {
-                                item.quality = item.quality + 1;
-                            }
-                        }
-
-                        if item.sell_in < 6 {
-                            if item.quality < 50 {
-                                item.quality = item.quality + 1;
-                            }
-                        }
-                    }
-                }
+            match item.name.as_str() {
+                x if x.contains("Aged Brie") => update_aged_brie(item),
+                x if x.contains("Backstage passes") => update_backstage_passes(item),
+                x if x.contains("Conjured") => update_others(item, 2),
+                x if x.contains("Sulfuras") => (),
+                _ => update_others(item, 1),
             }
-
-            if item.name != "Sulfuras, Hand of Ragnaros" {
-                item.sell_in = item.sell_in - 1;
-            }
-
-            if item.sell_in < 0 {
-                if item.name != "Aged Brie" {
-                    if item.name != "Backstage passes to a TAFKAL80ETC concert" {
-                        if item.quality > 0 {
-                            if item.name != "Sulfuras, Hand of Ragnaros" {
-                                item.quality = item.quality - 1;
-                            }
-                        }
-                    } else {
-                        item.quality = item.quality - item.quality;
-                    }
-                } else {
-                    if item.quality < 50 {
-                        item.quality = item.quality + 1;
-                    }
-                }
+            if !item.name.contains("Sulfuras"){
+                item.sell_in = item.sell_in - 1
             }
         }
     }
+}
+
+fn update_others(item: &mut Item, update: i32) {
+    match item.quality {
+        quality if quality > 0 && quality < 50 => {
+            if item.sell_in > 0 {
+                item.quality = item.quality - update
+            } else {
+                item.quality = item.quality - 2*update
+            }
+        }
+        _ => return,
+    }
+}
+
+fn update_aged_brie(item: &mut Item) {
+    match (item.quality, item.sell_in) {
+        (quality, sell_in) if quality < 50 && sell_in > 0 => item.quality = item.quality + 1,
+        (quality, sell_in) if quality < 50 && sell_in <= 0 => item.quality = item.quality + 2,
+        _ => return,
+    }
+}
+
+fn update_backstage_passes(item: &mut Item) {
+    match (item.quality, item.sell_in) {
+        (quality, sell_in) if quality < 48 && sell_in > 0 && sell_in < 6  => item.quality  = item.quality + 3,
+        (quality, sell_in) if quality < 49 && sell_in > 0 &&  sell_in < 11 => item.quality = item.quality + 2,
+        (quality, sell_in) if quality < 50 && sell_in > 0 => item.quality = item.quality + 1,
+        (quality, sell_in) if quality == 50 && sell_in > 0 => (),
+        _ =>  item.quality = 0
+    };
 }
 
 #[cfg(test)]
@@ -118,6 +111,7 @@ mod tests {
             Item::new("Aged Brie", 10, 50),
             Item::new("Aged Brie", -2, 32),
             Item::new("Aged Brie", 10, 52),
+            Item::new("Aged Brie", 2, 0),
         ];
         let mut rose = GildedRose::new(items);
         rose.update_quality();
@@ -137,8 +131,11 @@ mod tests {
         assert_eq!("Aged Brie", rose.items[3].name);
         assert_eq!(9, rose.items[3].sell_in);
         assert_eq!(52, rose.items[3].quality);
-    }
 
+        assert_eq!("Aged Brie", rose.items[4].name);
+        assert_eq!(1, rose.items[4].sell_in);
+        assert_eq!(1, rose.items[4].quality);
+    }
 
     #[test]
     pub fn test_sulfuras_items() {
@@ -170,21 +167,60 @@ mod tests {
             Item::new("Backstage passes to a TAFKAL80ETC concert", 10, 42),
             Item::new("Backstage passes to a TAFKAL80ETC concert", 5, 23),
             Item::new("Backstage passes to a TAFKAL80ETC concert", 0, 23),
+            Item::new("Backstage passes to a TAFKAL80ETC concert", 4, 48),
+            Item::new("Backstage passes to a TAFKAL80ETC concert", 8, 49),
+            Item::new("Backstage passes to a TAFKAL80ETC concert", 12, 50),
         ];
         let mut rose = GildedRose::new(items);
         rose.update_quality();
-        assert_eq!("Backstage passes to a TAFKAL80ETC concert", rose.items[0].name);
+        assert_eq!(
+            "Backstage passes to a TAFKAL80ETC concert",
+            rose.items[0].name
+        );
         assert_eq!(14, rose.items[0].sell_in);
         assert_eq!(21, rose.items[0].quality);
-        assert_eq!("Backstage passes to a TAFKAL80ETC concert", rose.items[1].name);
+
+        assert_eq!(
+            "Backstage passes to a TAFKAL80ETC concert",
+            rose.items[1].name
+        );
         assert_eq!(9, rose.items[1].sell_in);
         assert_eq!(44, rose.items[1].quality);
-        assert_eq!("Backstage passes to a TAFKAL80ETC concert", rose.items[2].name);
+
+        assert_eq!(
+            "Backstage passes to a TAFKAL80ETC concert",
+            rose.items[2].name
+        );
         assert_eq!(4, rose.items[2].sell_in);
         assert_eq!(26, rose.items[2].quality);
-        assert_eq!("Backstage passes to a TAFKAL80ETC concert", rose.items[3].name);
+
+        assert_eq!(
+            "Backstage passes to a TAFKAL80ETC concert",
+            rose.items[3].name
+        );
         assert_eq!(-1, rose.items[3].sell_in);
         assert_eq!(0, rose.items[3].quality);
+
+        assert_eq!(
+            "Backstage passes to a TAFKAL80ETC concert",
+            rose.items[4].name
+        );
+        assert_eq!(3, rose.items[4].sell_in);
+        assert_eq!(50, rose.items[4].quality);
+
+        assert_eq!(
+            "Backstage passes to a TAFKAL80ETC concert",
+            rose.items[5].name
+        );
+        assert_eq!(7, rose.items[5].sell_in);
+        assert_eq!(50, rose.items[5].quality);
+
+        assert_eq!(
+            "Backstage passes to a TAFKAL80ETC concert",
+            rose.items[6].name
+        );
+        assert_eq!(11, rose.items[6].sell_in);
+        assert_eq!(50, rose.items[6].quality);
     }
 
     #[test]
