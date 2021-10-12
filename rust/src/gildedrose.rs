@@ -186,4 +186,27 @@ mod tests {
         assert_eq!(-1, rose.items[3].sell_in);
         assert_eq!(0, rose.items[3].quality);
     }
+
+    #[test]
+    pub fn test_conjured_items() {
+        let items = vec![
+            Item::new("Conjured Mana Cake", 3, 6),
+            Item::new("Conjured Mana Cake", 0, 10),
+            Item::new("Conjured Mana Cake", 6, 0),
+        ];
+        let mut rose = GildedRose::new(items);
+        rose.update_quality();
+
+        assert_eq!("Conjured Mana Cake", rose.items[0].name);
+        assert_eq!(2, rose.items[0].sell_in);
+        assert_eq!(4, rose.items[0].quality);
+
+        assert_eq!("Conjured Mana Cake", rose.items[1].name);
+        assert_eq!(-1, rose.items[1].sell_in);
+        assert_eq!(6, rose.items[1].quality);
+
+        assert_eq!("Conjured Mana Cake", rose.items[2].name);
+        assert_eq!(5, rose.items[2].sell_in);
+        assert_eq!(0, rose.items[2].quality);
+    }
 }
